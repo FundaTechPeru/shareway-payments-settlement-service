@@ -118,6 +118,24 @@ public class Payment {
     }
 
     /**
+     * Captura el monto final de un pago AUTHORIZED; nunca puede superar lo autorizado.
+     *
+     * @throws ConflictException si el pago no está AUTHORIZED o el monto excede lo autorizado
+     */
+    public void capture(Money amount, Instant at) {
+        requireStatus(PaymentStatus.AUTHORIZED);
+        if (!amount.isPositive()) {
+            throw new IllegalArgumentException("Captured amount must be greater than zero");
+        }
+        if (amount.isGreaterThan(authorizedAmount)) {
+            throw new ConflictException("Captured amount exceeds the authorized amount for booking " + bookingId);
+        }
+        this.capturedAmount = amount;
+        this.status = PaymentStatus.CAPTURED;
+        this.capturedAt = at;
+    }
+
+    /**
      * Indica si la reserva ya tiene un cobro vigente, lo que hace idempotente una nueva autorización.
      */
     public boolean isAuthorizedOrCaptured() {

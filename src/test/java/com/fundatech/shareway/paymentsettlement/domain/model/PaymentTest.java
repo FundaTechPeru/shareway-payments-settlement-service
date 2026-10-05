@@ -53,6 +53,47 @@ class PaymentTest {
     }
 
     @Test
+    void capturesUpToTheAuthorizedAmount() {
+        Payment payment = authorizedPayment();
+
+        payment.capture(Money.of(new BigDecimal("28.40"), "PEN"), Instant.now());
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CAPTURED);
+        assertThat(payment.getCapturedAmount().getAmount()).isEqualTo(new BigDecimal("28.40"));
+    }
+
+    @Test
+    void cannotCaptureMoreThanAuthorized() {
+        Payment payment = authorizedPayment();
+
+        assertThatThrownBy(() -> payment.capture(Money.of(new BigDecimal("30.01"), "PEN"), Instant.now()))
+                .isInstanceOf(ConflictException.class);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.AUTHORIZED);
+    }
+
+    @Test
+    void cannotCaptureRejectedPayment() {
+        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        payment.markRejected();
+
+        assertThatThrownBy(() -> payment.capture(AMOUNT, Instant.now())).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void cannotCaptureTwice() {
+        Payment payment = authorizedPayment();
+        payment.capture(AMOUNT, Instant.now());
+
+        assertThatThrownBy(() -> payment.capture(AMOUNT, Instant.now())).isInstanceOf(ConflictException.class);
+    }
+
+    private Payment authorizedPayment() {
+        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        payment.markAuthorized("sim_ref", Instant.now());
+        return payment;
+    }
+
+    @Test
     void authorizedPaymentCannotBeRetried() {
         Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
         payment.markAuthorized("sim_ref", Instant.now());
