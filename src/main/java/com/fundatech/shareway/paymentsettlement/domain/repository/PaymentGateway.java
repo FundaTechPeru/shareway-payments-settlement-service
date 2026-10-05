@@ -16,6 +16,11 @@ public interface PaymentGateway {
     GatewayAuthorization authorize(String cardToken, Money amount);
 
     /**
+     * Cobra sobre una autorización previa un monto menor o igual al retenido.
+     */
+    void capture(String providerRef, Money amount);
+
+    /**
      * Resultado de una autorización: aprobada con referencia del proveedor o rechazada.
      */
     record GatewayAuthorization(boolean approved, String providerRef) {

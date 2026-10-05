@@ -4,6 +4,8 @@ import com.fundatech.shareway.paymentsettlement.domain.model.Money;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentGateway;
 import com.fundatech.shareway.paymentsettlement.shared.exception.GatewayUnavailableException;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SimulatedPaymentGatewayAdapter implements PaymentGateway {
+
+    private static final Logger log = LoggerFactory.getLogger(SimulatedPaymentGatewayAdapter.class);
 
     static final String DECLINED_TOKEN = "tok_declined";
     static final String UNAVAILABLE_TOKEN = "tok_unavailable";
@@ -25,5 +29,10 @@ public class SimulatedPaymentGatewayAdapter implements PaymentGateway {
             return new GatewayAuthorization(false, null);
         }
         return new GatewayAuthorization(true, "sim_" + UUID.randomUUID());
+    }
+
+    @Override
+    public void capture(String providerRef, Money amount) {
+        log.info("Simulated capture of {} on {}", amount, providerRef);
     }
 }

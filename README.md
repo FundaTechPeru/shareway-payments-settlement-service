@@ -61,12 +61,27 @@ Los valores por defecto de secretos son solo para desarrollo.
 | POST | `/api/v1/internal/payments/authorizations` | API key | Autoriza el pago de una reserva (201; repetido 200; rechazado 402; pasarela caída 503) |
 | GET | `/api/v1/payments/me` | PASSENGER | Lista mis pagos |
 | GET | `/api/v1/payments/me/{id}` | PASSENGER | Detalle de un pago propio (ajeno 404) |
+| POST | `/api/v1/internal/events/trip-completed` | API key | Evento TripCompleted: captura los pagos y crea la liquidación (201; repetido 200; 409 sin cambios) |
 
 ## Endpoints internos
 
 `/api/v1/internal/**` no usa JWT. Lo llaman otros microservicios (Booking & Pricing, Trip Execution) con el header `X-Internal-Api-Key`; sin header o con una clave incorrecta responde 401. La clave se compara en tiempo constante.
 
 La autorización es idempotente por `bookingId`: si la reserva ya tiene un pago `AUTHORIZED` o `CAPTURED` se devuelve el mismo pago (200) sin volver a llamar a la pasarela; si estaba `REJECTED` se reintenta sobre el mismo registro.
+
+### Recepción de eventos de otros servicios
+
+Mientras no exista un broker de mensajes, los endpoints `/api/v1/internal/events/*` representan la recepción de los Domain Events de otros servicios (`TripCompleted` de Trip Execution, `BookingCancelled` de Booking & Pricing). Cuando haya broker, el mismo servicio de aplicación se llamará desde un consumidor de eventos.
+
+### Captura al finalizar el viaje (US25)
+
+En una sola transacción se captura cada pago (`CAPTURED`, `capturedAmount = finalAmount`) y se crea un `DriverSettlement` `PENDING` con:
+
+- `gross` = suma capturada
+- `commission` = `gross × COMMISSION_RATE` (`CommissionPolicy`, redondeo HALF_UP a 2 decimales)
+- `net` = `gross − commission`, de modo que siempre `gross = commission + net`
+
+Si un `finalAmount` supera lo autorizado o alguna reserva no tiene pago `AUTHORIZED`, responde 409 y no cambia nada. Es idempotente por `tripId`.
 
 ## Pasarela simulada
 

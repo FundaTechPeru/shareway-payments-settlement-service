@@ -114,6 +114,13 @@ public class HttpSteps {
         assertThat(items).hasSize(count);
     }
 
+    @Then("every item field {string} should be {string}")
+    public void everyItemField(String field, String expected) throws Exception {
+        List<Object> values = JsonPath.read(context.getLastResult().getResponse().getContentAsString(),
+                "$[*]." + field);
+        assertThat(values).isNotEmpty().allSatisfy(value -> assertThat(String.valueOf(value)).isEqualTo(expected));
+    }
+
     @Then("the response should report an error on field {string}")
     public void responseFieldError(String field) throws Exception {
         List<String> fields = JsonPath.read(context.getLastResult().getResponse().getContentAsString(),
