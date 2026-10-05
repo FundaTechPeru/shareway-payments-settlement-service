@@ -43,6 +43,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/internal/**").hasRole(InternalApiKeyFilter.INTERNAL_ROLE)
                         .requestMatchers("/api/v1/payment-methods/**", "/api/v1/payments/**")
                         .hasRole(UserRole.PASSENGER.name())
+                        .requestMatchers("/api/v1/settlements/**").hasRole(UserRole.DRIVER.name())
+                        .requestMatchers("/api/v1/admin/**").hasRole(UserRole.ADMIN.name())
                         .anyRequest().authenticated())
                 .addFilterBefore(new InternalApiKeyFilter(internalApiKey, errorWriter),
                         UsernamePasswordAuthenticationFilter.class)
