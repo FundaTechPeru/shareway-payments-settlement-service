@@ -55,6 +55,21 @@ Los valores por defecto de secretos son solo para desarrollo.
 |---|---|---|---|
 | GET | `/actuator/health` | Público | Estado del servicio |
 | GET | `/v3/api-docs`, `/swagger-ui.html` | Público | Documentación OpenAPI |
+| POST | `/api/v1/payment-methods` | PASSENGER | Registra una tarjeta tokenizada (201; vencida 400; token duplicado 409) |
+| GET | `/api/v1/payment-methods` | PASSENGER | Lista mis tarjetas activas |
+| DELETE | `/api/v1/payment-methods/{id}` | PASSENGER | Desactivación lógica (204; ajena 404) |
+
+## Autenticación
+
+Este servicio **no emite tokens**. Los emite Driver Management (HS256, mismo `JWT_SECRET`) con los claims `sub` (email), `userId` (Long) y `role` (`PASSENGER`, `DRIVER` o `ADMIN`).
+
+- `JwtAuthenticationFilter` valida firma y expiración y arma el usuario autenticado solo con los claims; aquí no existe tabla de usuarios.
+- Un token expirado, mal firmado o sin `userId`/`role` devuelve 401.
+- Si un pasajero se vuelve conductor, debe volver a iniciar sesión para que su token traiga el rol `DRIVER`.
+
+## Datos de tarjeta
+
+Nunca se recibe ni se guarda el número completo de la tarjeta: solo un `cardToken` (simulado), la marca y los últimos 4 dígitos. Las respuestas no devuelven el `cardToken`.
 
 ## Errores
 
