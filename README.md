@@ -58,6 +58,29 @@ Los valores por defecto de secretos son solo para desarrollo.
 | POST | `/api/v1/payment-methods` | PASSENGER | Registra una tarjeta tokenizada (201; vencida 400; token duplicado 409) |
 | GET | `/api/v1/payment-methods` | PASSENGER | Lista mis tarjetas activas |
 | DELETE | `/api/v1/payment-methods/{id}` | PASSENGER | Desactivación lógica (204; ajena 404) |
+| POST | `/api/v1/internal/payments/authorizations` | API key | Autoriza el pago de una reserva (201; repetido 200; rechazado 402; pasarela caída 503) |
+| GET | `/api/v1/payments/me` | PASSENGER | Lista mis pagos |
+| GET | `/api/v1/payments/me/{id}` | PASSENGER | Detalle de un pago propio (ajeno 404) |
+
+## Endpoints internos
+
+`/api/v1/internal/**` no usa JWT. Lo llaman otros microservicios (Booking & Pricing, Trip Execution) con el header `X-Internal-Api-Key`; sin header o con una clave incorrecta responde 401. La clave se compara en tiempo constante.
+
+La autorización es idempotente por `bookingId`: si la reserva ya tiene un pago `AUTHORIZED` o `CAPTURED` se devuelve el mismo pago (200) sin volver a llamar a la pasarela; si estaba `REJECTED` se reintenta sobre el mismo registro.
+
+## Pasarela simulada
+
+`SimulatedPaymentGatewayAdapter` implementa el puerto `PaymentGateway` sin llamadas reales y de forma determinista:
+
+| `cardToken` | Resultado |
+|---|---|
+| `tok_declined` | Rechazado (402, el pago queda `REJECTED`) |
+| `tok_unavailable` | Pasarela no disponible (503, no se guarda un pago autorizado) |
+| cualquier otro | Aprobado con `providerRef = sim_<uuid>` |
+
+## Eventos de dominio
+
+Se publican con `DomainEventPublisher` sobre el `ApplicationEventPublisher` de Spring y, por ahora, un listener solo los registra en el log: `PaymentAuthorized`, `PaymentRejected`, `PaymentCaptured`, `PaymentVoided`, `PenaltyApplied`, `DriverSettlementCreated`.
 
 ## Autenticación
 

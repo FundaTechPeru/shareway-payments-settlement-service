@@ -86,11 +86,17 @@ public class HttpSteps {
     @Then("the response field {string} should be {string}")
     public void responseField(String path, String expected) throws Exception {
         Object actual = read(path);
+        String resolved = context.resolve(expected);
         if (actual instanceof Number number) {
-            assertThat(new BigDecimal(number.toString())).isEqualByComparingTo(new BigDecimal(expected));
+            assertThat(new BigDecimal(number.toString())).isEqualByComparingTo(new BigDecimal(resolved));
         } else {
-            assertThat(String.valueOf(actual)).isEqualTo(context.resolve(expected));
+            assertThat(String.valueOf(actual)).isEqualTo(resolved);
         }
+    }
+
+    @Then("the response field {string} should start with {string}")
+    public void responseFieldStartsWith(String path, String prefix) throws Exception {
+        assertThat(String.valueOf(read(path))).startsWith(prefix);
     }
 
     @Then("the response field {string} should not exist")

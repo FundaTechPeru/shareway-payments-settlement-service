@@ -1,0 +1,176 @@
+package com.fundatech.shareway.paymentsettlement.domain.model;
+
+import com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.Instant;
+
+/**
+ * Agregado que representa el pago de una reserva. Hay como máximo un pago por {@code bookingId}.
+ */
+@Entity
+@Table(name = "payments")
+public class Payment {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "booking_id", nullable = false, unique = true)
+    private Long bookingId;
+
+    @Column(name = "passenger_id", nullable = false)
+    private Long passengerId;
+
+    @Column(name = "payment_method_id", nullable = false)
+    private Long paymentMethodId;
+
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "authorized_amount", precision = 12, scale = 2,
+            nullable = false))
+    @AttributeOverride(name = "currency", column = @Column(name = "currency", length = 3, nullable = false))
+    private Money authorizedAmount;
+
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "captured_amount", precision = 12, scale = 2))
+    @AttributeOverride(name = "currency", column = @Column(name = "captured_currency", length = 3))
+    private Money capturedAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PaymentStatus status;
+
+    @Column(name = "provider_ref", length = 100)
+    private String providerRef;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "authorized_at")
+    private Instant authorizedAt;
+
+    @Column(name = "captured_at")
+    private Instant capturedAt;
+
+    @Column(name = "voided_at")
+    private Instant voidedAt;
+
+    protected Payment() {
+    }
+
+    /**
+     * Crea un pago PENDING para la reserva antes de consultar a la pasarela.
+     */
+    public static Payment create(Long bookingId, Long passengerId, Long paymentMethodId, Money amount) {
+        if (!amount.isPositive()) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+        Payment payment = new Payment();
+        payment.bookingId = bookingId;
+        payment.passengerId = passengerId;
+        payment.paymentMethodId = paymentMethodId;
+        payment.authorizedAmount = amount;
+        payment.status = PaymentStatus.PENDING;
+        payment.createdAt = Instant.now();
+        return payment;
+    }
+
+    /**
+     * Prepara un nuevo intento sobre un pago REJECTED de la misma reserva y del mismo pasajero.
+     */
+    public void retry(Long passengerId, Long paymentMethodId, Money amount) {
+        requireStatus(PaymentStatus.REJECTED);
+        if (!this.passengerId.equals(passengerId)) {
+            throw new ConflictException("Booking already has a payment from another passenger");
+        }
+        if (!amount.isPositive()) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+        this.paymentMethodId = paymentMethodId;
+        this.authorizedAmount = amount;
+        this.status = PaymentStatus.PENDING;
+    }
+
+    /**
+     * Marca el pago como AUTHORIZED con la referencia devuelta por la pasarela.
+     */
+    public void markAuthorized(String providerRef, Instant at) {
+        requireStatus(PaymentStatus.PENDING);
+        this.providerRef = providerRef;
+        this.status = PaymentStatus.AUTHORIZED;
+        this.authorizedAt = at;
+    }
+
+    /**
+     * Marca el pago como REJECTED tras la negativa de la pasarela.
+     */
+    public void markRejected() {
+        requireStatus(PaymentStatus.PENDING);
+        this.status = PaymentStatus.REJECTED;
+    }
+
+    /**
+     * Indica si la reserva ya tiene un cobro vigente, lo que hace idempotente una nueva autorización.
+     */
+    public boolean isAuthorizedOrCaptured() {
+        return status == PaymentStatus.AUTHORIZED || status == PaymentStatus.CAPTURED;
+    }
+
+    private void requireStatus(PaymentStatus expected) {
+        if (status != expected) {
+            throw new ConflictException("Payment must be " + expected + " but is " + status);
+        }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Long getBookingId() {
+        return bookingId;
+    }
+
+    public Long getPassengerId() {
+        return passengerId;
+    }
+
+    public Long getPaymentMethodId() {
+        return paymentMethodId;
+    }
+
+    public Money getAuthorizedAmount() {
+        return authorizedAmount;
+    }
+
+    public Money getCapturedAmount() {
+        return capturedAmount;
+    }
+
+    public PaymentStatus getStatus() {
+        return status;
+    }
+
+    public String getProviderRef() {
+        return providerRef;
+    }
+
+    public Instant getAuthorizedAt() {
+        return authorizedAt;
+    }
+
+    public Instant getCapturedAt() {
+        return capturedAt;
+    }
+
+    public Instant getVoidedAt() {
+        return voidedAt;
+    }
+}

@@ -1,9 +1,11 @@
 package com.fundatech.shareway.paymentsettlement.infrastructure.config;
 
+import com.fundatech.shareway.paymentsettlement.infrastructure.security.InternalApiKeyFilter;
 import com.fundatech.shareway.paymentsettlement.infrastructure.security.JwtAuthenticationFilter;
 import com.fundatech.shareway.paymentsettlement.infrastructure.security.JwtService;
 import com.fundatech.shareway.paymentsettlement.infrastructure.security.SecurityErrorWriter;
 import com.fundatech.shareway.paymentsettlement.infrastructure.security.UserRole;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -25,7 +27,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityErrorWriter errorWriter,
-                                                   JwtService jwtService) {
+                                                   JwtService jwtService,
+                                                   @Value("${app.internal.api-key}") String internalApiKey) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -37,8 +40,12 @@ public class SecurityConfig {
                         .accessDeniedHandler(errorWriter))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
-                        .requestMatchers("/api/v1/payment-methods/**").hasRole(UserRole.PASSENGER.name())
+                        .requestMatchers("/api/v1/internal/**").hasRole(InternalApiKeyFilter.INTERNAL_ROLE)
+                        .requestMatchers("/api/v1/payment-methods/**", "/api/v1/payments/**")
+                        .hasRole(UserRole.PASSENGER.name())
                         .anyRequest().authenticated())
+                .addFilterBefore(new InternalApiKeyFilter(internalApiKey, errorWriter),
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService, errorWriter),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
