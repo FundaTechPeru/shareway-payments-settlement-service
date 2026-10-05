@@ -63,6 +63,11 @@ Los valores por defecto de secretos son solo para desarrollo.
 | GET | `/api/v1/payments/me/{id}` | PASSENGER | Detalle de un pago propio (ajeno 404) |
 | POST | `/api/v1/internal/events/trip-completed` | API key | Evento TripCompleted: captura los pagos y crea la liquidación (201; repetido 200; 409 sin cambios) |
 | POST | `/api/v1/internal/events/booking-cancelled` | API key | Evento BookingCancelled: cobra la penalidad o anula la autorización (200; sin pago 404; pago no autorizado 409) |
+| GET | `/api/v1/settlements/me` | DRIVER | Lista mis liquidaciones |
+| GET | `/api/v1/settlements/me/{id}` | DRIVER | Detalle de una liquidación propia (ajena 404) |
+| GET | `/api/v1/settlements/me/summary` | DRIVER | `{totalGross, totalCommission, totalNet, pendingNet, paidNet}` |
+| GET | `/api/v1/admin/settlements?status=PENDING\|PAID` | ADMIN | Lista liquidaciones, con filtro opcional por estado |
+| PATCH | `/api/v1/admin/settlements/{id}/mark-paid` | ADMIN | `PENDING → PAID` con `paidAt` (ya pagada 409) |
 
 ## Endpoints internos
 
@@ -142,7 +147,17 @@ Todas las respuestas de error tienen el cuerpo `{timestamp, status, error, messa
 ## Decisiones de diseño
 
 - Arquitectura por capas DDD: `interfaces`, `application`, `domain`, `infrastructure`, `shared`.
+- Los repositorios y la pasarela son puertos en `domain/repository`; `infrastructure` contiene los adaptadores.
 - Atajo pragmático: las entidades de dominio llevan anotaciones JPA en lugar de tener un modelo de persistencia separado.
+- Dinero siempre como `Money` (`BigDecimal`, 2 decimales, HALF_UP). Moneda única `PEN`; otra moneda responde 400.
+- `passenger_id` y `driver_id` son referencias por id a Driver Management, sin claves foráneas.
+- Tablas: `payment_methods`, `payments`, `penalties`, `driver_settlements`.
+
+## Pruebas
+
+- Escenarios Cucumber (Gherkin en inglés) en `src/test/resources/features`, ejecutados con MockMvc sobre H2 y con la BD limpia antes de cada escenario.
+- `TestTokenFactory` firma tokens de prueba (`sub`, `userId`, `role`) con el secreto del perfil `test`, incluidos tokens expirados y sin `role`.
+- Pruebas unitarias del dominio: redondeo de comisión y neto, `gross = commission + net`, penalidad dentro y fuera de la ventana y transiciones inválidas de `Payment`.
 
 ## Flujo de ramas (GitFlow)
 
