@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fundatech.shareway.paymentsettlement.domain.policy.PercentageCommissionPolicy;
+import com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,17 @@ class DriverSettlementTest {
 
             assertThat(settlement.getCommission().add(settlement.getNet())).isEqualTo(settlement.getGross());
         }
+    }
+
+    @Test
+    void marksPendingSettlementAsPaidOnlyOnce() {
+        DriverSettlement settlement = settlementFor("50.00");
+
+        settlement.markPaid(Instant.now());
+
+        assertThat(settlement.getStatus()).isEqualTo(SettlementStatus.PAID);
+        assertThat(settlement.getPaidAt()).isNotNull();
+        assertThatThrownBy(() -> settlement.markPaid(Instant.now())).isInstanceOf(ConflictException.class);
     }
 
     @Test

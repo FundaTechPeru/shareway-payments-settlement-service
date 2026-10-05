@@ -1,6 +1,7 @@
 package com.fundatech.shareway.paymentsettlement.domain.model;
 
 import com.fundatech.shareway.paymentsettlement.domain.policy.CommissionPolicy;
+import com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -80,6 +81,19 @@ public class DriverSettlement {
         settlement.tripCompletedAt = tripCompletedAt;
         settlement.createdAt = Instant.now();
         return settlement;
+    }
+
+    /**
+     * Registra que la liquidación fue pagada al conductor.
+     *
+     * @throws ConflictException si ya estaba PAID
+     */
+    public void markPaid(Instant at) {
+        if (status == SettlementStatus.PAID) {
+            throw new ConflictException("Settlement is already paid");
+        }
+        this.status = SettlementStatus.PAID;
+        this.paidAt = at;
     }
 
     public Long getId() {
