@@ -21,6 +21,11 @@ public interface PaymentGateway {
     void capture(String providerRef, Money amount);
 
     /**
+     * Libera el monto retenido de una autorización que no se cobrará.
+     */
+    void voidAuthorization(String providerRef);
+
+    /**
      * Resultado de una autorización: aprobada con referencia del proveedor o rechazada.
      */
     record GatewayAuthorization(boolean approved, String providerRef) {

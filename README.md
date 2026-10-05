@@ -62,6 +62,7 @@ Los valores por defecto de secretos son solo para desarrollo.
 | GET | `/api/v1/payments/me` | PASSENGER | Lista mis pagos |
 | GET | `/api/v1/payments/me/{id}` | PASSENGER | Detalle de un pago propio (ajeno 404) |
 | POST | `/api/v1/internal/events/trip-completed` | API key | Evento TripCompleted: captura los pagos y crea la liquidación (201; repetido 200; 409 sin cambios) |
+| POST | `/api/v1/internal/events/booking-cancelled` | API key | Evento BookingCancelled: cobra la penalidad o anula la autorización (200; sin pago 404; pago no autorizado 409) |
 
 ## Endpoints internos
 
@@ -82,6 +83,21 @@ En una sola transacción se captura cada pago (`CAPTURED`, `capturedAmount = fin
 - `net` = `gross − commission`, de modo que siempre `gross = commission + net`
 
 Si un `finalAmount` supera lo autorizado o alguna reserva no tiene pago `AUTHORIZED`, responde 409 y no cambia nada. Es idempotente por `tripId`.
+
+### Penalidad por cancelación (US12)
+
+`PenaltyPolicy` (Strategy, implementada por `DefaultPenaltyPolicy`):
+
+| Caso | Resultado |
+|---|---|
+| `PASSENGER_CANCELLED` con menos de `PENALTY_WINDOW_MINUTES` antes de la salida | Penalidad = `authorizedAmount × PENALTY_RATE`; se captura solo ese monto y se publica `PenaltyApplied` |
+| `NO_SHOW` | Igual que el caso anterior |
+| `PASSENGER_CANCELLED` con tiempo suficiente | Se anula la autorización (`VOIDED`) y se publica `PaymentVoided` |
+| `NO_DRIVER_AVAILABLE` | Se anula la autorización, sin penalidad |
+
+Repetir la cancelación de un mismo `bookingId` devuelve el mismo resultado (idempotente).
+
+> Los valores de penalidad (`PENALTY_RATE = 0.50`, `PENALTY_WINDOW_MINUTES = 30`) son configurables y quedan **por validar con el equipo** (concern AC-05 del informe).
 
 ## Pasarela simulada
 

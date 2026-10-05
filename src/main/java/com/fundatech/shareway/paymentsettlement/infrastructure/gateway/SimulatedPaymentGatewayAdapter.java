@@ -35,4 +35,9 @@ public class SimulatedPaymentGatewayAdapter implements PaymentGateway {
     public void capture(String providerRef, Money amount) {
         log.info("Simulated capture of {} on {}", amount, providerRef);
     }
+
+    @Override
+    public void voidAuthorization(String providerRef) {
+        log.info("Simulated void of {}", providerRef);
+    }
 }

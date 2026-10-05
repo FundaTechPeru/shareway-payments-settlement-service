@@ -1,10 +1,13 @@
 package com.fundatech.shareway.paymentsettlement.interfaces.integration;
 
+import com.fundatech.shareway.paymentsettlement.application.CancellationService;
 import com.fundatech.shareway.paymentsettlement.application.IdempotentResult;
 import com.fundatech.shareway.paymentsettlement.application.PaymentCaptureService;
 import com.fundatech.shareway.paymentsettlement.application.PaymentCaptureService.TripCharge;
 import com.fundatech.shareway.paymentsettlement.domain.model.DriverSettlement;
 import com.fundatech.shareway.paymentsettlement.infrastructure.config.OpenApiConfig;
+import com.fundatech.shareway.paymentsettlement.interfaces.rest.dto.BookingCancelledRequest;
+import com.fundatech.shareway.paymentsettlement.interfaces.rest.dto.CancellationResponse;
 import com.fundatech.shareway.paymentsettlement.interfaces.rest.dto.SettlementResponse;
 import com.fundatech.shareway.paymentsettlement.interfaces.rest.dto.TripCompletedRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,9 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class IntegrationEventController {
 
     private final PaymentCaptureService captureService;
+    private final CancellationService cancellationService;
 
-    public IntegrationEventController(PaymentCaptureService captureService) {
+    public IntegrationEventController(PaymentCaptureService captureService, CancellationService cancellationService) {
         this.captureService = captureService;
+        this.cancellationService = cancellationService;
     }
 
     @PostMapping("/trip-completed")
@@ -42,5 +47,12 @@ public class IntegrationEventController {
                         .toList());
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(SettlementResponse.from(result.value()));
+    }
+
+    @PostMapping("/booking-cancelled")
+    @Operation(summary = "BookingCancelled: charge the cancellation penalty or void the authorization")
+    public CancellationResponse bookingCancelled(@Valid @RequestBody BookingCancelledRequest request) {
+        return CancellationResponse.from(cancellationService.cancel(request.bookingId(), request.reason(),
+                request.cancelledAt(), request.scheduledDepartureAt()));
     }
 }

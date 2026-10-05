@@ -51,6 +51,10 @@ public class Payment {
     @Column(name = "provider_ref", length = 100)
     private String providerRef;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancellation_reason", length = 30)
+    private CancellationReason cancellationReason;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -136,6 +140,33 @@ public class Payment {
     }
 
     /**
+     * Cobra solo el monto de la penalidad sobre un pago AUTHORIZED de una reserva cancelada.
+     */
+    public void chargePenalty(Money penalty, CancellationReason reason, Instant at) {
+        capture(penalty, at);
+        this.cancellationReason = reason;
+    }
+
+    /**
+     * Anula la autorización de una reserva cancelada sin penalidad.
+     *
+     * @throws ConflictException si el pago no está AUTHORIZED
+     */
+    public void voidAuthorization(CancellationReason reason, Instant at) {
+        requireStatus(PaymentStatus.AUTHORIZED);
+        this.status = PaymentStatus.VOIDED;
+        this.cancellationReason = reason;
+        this.voidedAt = at;
+    }
+
+    /**
+     * Indica si el pago ya fue resuelto por una cancelación, lo que hace idempotente un nuevo aviso.
+     */
+    public boolean isCancellationResolved() {
+        return cancellationReason != null;
+    }
+
+    /**
      * Indica si la reserva ya tiene un cobro vigente, lo que hace idempotente una nueva autorización.
      */
     public boolean isAuthorizedOrCaptured() {
@@ -178,6 +209,10 @@ public class Payment {
 
     public String getProviderRef() {
         return providerRef;
+    }
+
+    public CancellationReason getCancellationReason() {
+        return cancellationReason;
     }
 
     public Instant getAuthorizedAt() {

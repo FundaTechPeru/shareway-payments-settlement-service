@@ -87,6 +87,35 @@ class PaymentTest {
         assertThatThrownBy(() -> payment.capture(AMOUNT, Instant.now())).isInstanceOf(ConflictException.class);
     }
 
+    @Test
+    void cannotCaptureVoidedPayment() {
+        Payment payment = authorizedPayment();
+        payment.voidAuthorization(CancellationReason.NO_DRIVER_AVAILABLE, Instant.now());
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.VOIDED);
+        assertThatThrownBy(() -> payment.capture(AMOUNT, Instant.now())).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void cannotVoidCapturedPayment() {
+        Payment payment = authorizedPayment();
+        payment.capture(AMOUNT, Instant.now());
+
+        assertThatThrownBy(() -> payment.voidAuthorization(CancellationReason.PASSENGER_CANCELLED, Instant.now()))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void penaltyCapturesOnlyThePenaltyAmount() {
+        Payment payment = authorizedPayment();
+
+        payment.chargePenalty(Money.of(new BigDecimal("15.00"), "PEN"), CancellationReason.NO_SHOW, Instant.now());
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CAPTURED);
+        assertThat(payment.getCapturedAmount().getAmount()).isEqualTo(new BigDecimal("15.00"));
+        assertThat(payment.isCancellationResolved()).isTrue();
+    }
+
     private Payment authorizedPayment() {
         Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
         payment.markAuthorized("sim_ref", Instant.now());
