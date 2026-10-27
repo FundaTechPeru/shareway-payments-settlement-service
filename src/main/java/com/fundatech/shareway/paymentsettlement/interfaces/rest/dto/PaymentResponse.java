@@ -1,0 +1,22 @@
+package com.fundatech.shareway.paymentsettlement.interfaces.rest.dto;
+
+import com.fundatech.shareway.paymentsettlement.domain.model.Payment;
+import com.fundatech.shareway.paymentsettlement.domain.model.PaymentStatus;
+import java.math.BigDecimal;
+import java.time.Instant;
+
+/**
+ * Vista de un pago con sus montos y marcas de tiempo.
+ */
+public record PaymentResponse(Long id, Long bookingId, Long passengerId, Long paymentMethodId, PaymentStatus status,
+                              BigDecimal authorizedAmount, BigDecimal capturedAmount, String currency,
+                              String providerRef, Instant authorizedAt, Instant capturedAt, Instant voidedAt) {
+
+    public static PaymentResponse from(Payment payment) {
+        return new PaymentResponse(payment.getId(), payment.getBookingId(), payment.getPassengerId(),
+                payment.getPaymentMethodId(), payment.getStatus(), payment.getAuthorizedAmount().getAmount(),
+                payment.getCapturedAmount() == null ? null : payment.getCapturedAmount().getAmount(),
+                payment.getAuthorizedAmount().getCurrency(), payment.getProviderRef(), payment.getAuthorizedAt(),
+                payment.getCapturedAt(), payment.getVoidedAt());
+    }
+}
