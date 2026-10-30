@@ -7,6 +7,7 @@ import com.fundatech.shareway.paymentsettlement.interfaces.rest.dto.SettlementRe
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,7 +42,7 @@ public class SettlementController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get one settlement of the authenticated driver")
-    public SettlementResponse mySettlement(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id) {
+    public SettlementResponse mySettlement(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
         return SettlementResponse.from(settlementService.getDriverSettlement(user.userId(), id));
     }
 }

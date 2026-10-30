@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +45,7 @@ public class PaymentCaptureService {
     /**
      * Monto final a cobrar por una reserva del viaje.
      */
-    public record TripCharge(Long bookingId, BigDecimal finalAmount) {
+    public record TripCharge(UUID bookingId, BigDecimal finalAmount) {
     }
 
     /**
@@ -54,7 +55,7 @@ public class PaymentCaptureService {
      * @throws ConflictException si alguna reserva no tiene pago AUTHORIZED o su monto final excede lo autorizado
      */
     @Transactional
-    public IdempotentResult<DriverSettlement> captureTrip(Long tripId, Long driverId, Instant completedAt,
+    public IdempotentResult<DriverSettlement> captureTrip(UUID tripId, UUID driverId, Instant completedAt,
                                                           List<TripCharge> charges) {
         Optional<DriverSettlement> existing = settlements.findByTripId(tripId);
         if (existing.isPresent()) {

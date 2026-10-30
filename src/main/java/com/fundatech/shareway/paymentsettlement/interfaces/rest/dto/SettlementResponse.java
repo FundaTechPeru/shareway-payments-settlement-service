@@ -4,11 +4,12 @@ import com.fundatech.shareway.paymentsettlement.domain.model.DriverSettlement;
 import com.fundatech.shareway.paymentsettlement.domain.model.SettlementStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Vista de la liquidación de un viaje para el conductor o el administrador.
  */
-public record SettlementResponse(Long id, Long tripId, Long driverId, BigDecimal grossAmount,
+public record SettlementResponse(UUID id, UUID tripId, UUID driverId, BigDecimal grossAmount,
                                  BigDecimal commissionAmount, BigDecimal netAmount, String currency,
                                  SettlementStatus status, Instant tripCompletedAt, Instant createdAt,
                                  Instant paidAt) {

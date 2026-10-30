@@ -3,6 +3,7 @@ package com.fundatech.shareway.paymentsettlement.infrastructure.persistence;
 import com.fundatech.shareway.paymentsettlement.domain.model.Penalty;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PenaltyRepository;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -23,7 +24,7 @@ public class PenaltyPersistenceAdapter implements PenaltyRepository {
     }
 
     @Override
-    public Optional<Penalty> findByBookingId(Long bookingId) {
+    public Optional<Penalty> findByBookingId(UUID bookingId) {
         return jpa.findByBookingId(bookingId);
     }
 }

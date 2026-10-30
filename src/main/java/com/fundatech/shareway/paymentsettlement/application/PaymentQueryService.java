@@ -4,6 +4,7 @@ import com.fundatech.shareway.paymentsettlement.domain.model.Payment;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentRepository;
 import com.fundatech.shareway.paymentsettlement.shared.exception.ResourceNotFoundException;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,14 +21,14 @@ public class PaymentQueryService {
         this.payments = payments;
     }
 
-    public List<Payment> listPassengerPayments(Long passengerId) {
+    public List<Payment> listPassengerPayments(UUID passengerId) {
         return payments.findByPassengerId(passengerId);
     }
 
     /**
      * Devuelve un pago del pasajero; uno ajeno se trata como inexistente.
      */
-    public Payment getPassengerPayment(Long passengerId, Long paymentId) {
+    public Payment getPassengerPayment(UUID passengerId, UUID paymentId) {
         return payments.findByIdAndPassengerId(paymentId, passengerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
     }

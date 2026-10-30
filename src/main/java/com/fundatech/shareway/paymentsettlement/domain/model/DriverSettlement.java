@@ -13,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Liquidación de las ganancias de un conductor por un viaje completado. Invariante: bruto = comisión + neto.
@@ -22,14 +23,14 @@ import java.time.Instant;
 public class DriverSettlement {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "trip_id", nullable = false, unique = true)
-    private Long tripId;
+    private UUID tripId;
 
     @Column(name = "driver_id", nullable = false)
-    private Long driverId;
+    private UUID driverId;
 
     @Embedded
     @AttributeOverride(name = "amount", column = @Column(name = "gross_amount", precision = 12, scale = 2,
@@ -69,7 +70,7 @@ public class DriverSettlement {
     /**
      * Crea una liquidación PENDING calculando la comisión con la política y el neto como bruto menos comisión.
      */
-    public static DriverSettlement create(Long tripId, Long driverId, Money gross, Instant tripCompletedAt,
+    public static DriverSettlement create(UUID tripId, UUID driverId, Money gross, Instant tripCompletedAt,
                                           CommissionPolicy commissionPolicy) {
         DriverSettlement settlement = new DriverSettlement();
         settlement.tripId = tripId;
@@ -96,15 +97,15 @@ public class DriverSettlement {
         this.paidAt = at;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public Long getTripId() {
+    public UUID getTripId() {
         return tripId;
     }
 
-    public Long getDriverId() {
+    public UUID getDriverId() {
         return driverId;
     }
 

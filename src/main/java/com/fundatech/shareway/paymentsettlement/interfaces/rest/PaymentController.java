@@ -6,6 +6,7 @@ import com.fundatech.shareway.paymentsettlement.interfaces.rest.dto.PaymentRespo
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +35,7 @@ public class PaymentController {
 
     @GetMapping("/me/{id}")
     @Operation(summary = "Get one payment of the authenticated passenger")
-    public PaymentResponse myPayment(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id) {
+    public PaymentResponse myPayment(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
         return PaymentResponse.from(queryService.getPassengerPayment(user.userId(), id));
     }
 }

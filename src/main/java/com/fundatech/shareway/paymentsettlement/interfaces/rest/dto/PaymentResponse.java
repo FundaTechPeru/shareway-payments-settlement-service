@@ -4,11 +4,12 @@ import com.fundatech.shareway.paymentsettlement.domain.model.Payment;
 import com.fundatech.shareway.paymentsettlement.domain.model.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Vista de un pago con sus montos y marcas de tiempo.
  */
-public record PaymentResponse(Long id, Long bookingId, Long passengerId, Long paymentMethodId, PaymentStatus status,
+public record PaymentResponse(UUID id, UUID bookingId, UUID passengerId, UUID paymentMethodId, PaymentStatus status,
                               BigDecimal authorizedAmount, BigDecimal capturedAmount, String currency,
                               String providerRef, Instant authorizedAt, Instant capturedAt, Instant voidedAt) {
 

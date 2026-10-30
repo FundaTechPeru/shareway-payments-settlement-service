@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +33,7 @@ public class SettlementService {
     }
 
     @Transactional(readOnly = true)
-    public List<DriverSettlement> listDriverSettlements(Long driverId) {
+    public List<DriverSettlement> listDriverSettlements(UUID driverId) {
         return settlements.findByDriverId(driverId);
     }
 
@@ -40,13 +41,13 @@ public class SettlementService {
      * Devuelve una liquidación del conductor; una ajena se trata como inexistente.
      */
     @Transactional(readOnly = true)
-    public DriverSettlement getDriverSettlement(Long driverId, Long settlementId) {
+    public DriverSettlement getDriverSettlement(UUID driverId, UUID settlementId) {
         return settlements.findByIdAndDriverId(settlementId, driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Settlement not found"));
     }
 
     @Transactional(readOnly = true)
-    public EarningsSummary summarize(Long driverId) {
+    public EarningsSummary summarize(UUID driverId) {
         Money gross = Money.zero(Money.PEN);
         Money commission = Money.zero(Money.PEN);
         Money pending = Money.zero(Money.PEN);
@@ -75,7 +76,7 @@ public class SettlementService {
      * @throws com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException si ya estaba pagada
      */
     @Transactional
-    public DriverSettlement markPaid(Long settlementId) {
+    public DriverSettlement markPaid(UUID settlementId) {
         DriverSettlement settlement = settlements.findById(settlementId)
                 .orElseThrow(() -> new ResourceNotFoundException("Settlement not found"));
         settlement.markPaid(Instant.now());

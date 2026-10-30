@@ -9,6 +9,7 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.junit.jupiter.api.Test;
 
@@ -20,23 +21,27 @@ class JwtServiceTest {
     private static final String SECRET = "unit-test-shareway-jwt-secret-with-32-bytes";
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
+    private static final UUID USER_ID = UUID.randomUUID();
+
     private final JwtService jwtService = new JwtService(SECRET);
 
     @Test
     void extractsUserIdAndRoleFromValidToken() {
-        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", 7L).claim("role", "DRIVER")
+        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", USER_ID.toString())
+                .claim("role", "DRIVER")
                 .expiration(Date.from(Instant.now().plusSeconds(600))).signWith(KEY).compact();
 
         AuthenticatedUser user = jwtService.parse(token);
 
-        assertThat(user.userId()).isEqualTo(7L);
+        assertThat(user.userId()).isEqualTo(USER_ID);
         assertThat(user.role()).isEqualTo(UserRole.DRIVER);
         assertThat(user.email()).isEqualTo("ana@upc.edu.pe");
     }
 
     @Test
     void rejectsExpiredToken() {
-        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", 7L).claim("role", "DRIVER")
+        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", USER_ID.toString())
+                .claim("role", "DRIVER")
                 .expiration(Date.from(Instant.now().minusSeconds(60))).signWith(KEY).compact();
 
         assertThatThrownBy(() -> jwtService.parse(token)).isInstanceOf(JwtException.class);
@@ -44,7 +49,15 @@ class JwtServiceTest {
 
     @Test
     void rejectsTokenWithoutRoleClaim() {
-        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", 7L)
+        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", USER_ID.toString())
+                .expiration(Date.from(Instant.now().plusSeconds(600))).signWith(KEY).compact();
+
+        assertThatThrownBy(() -> jwtService.parse(token)).isInstanceOf(JwtException.class);
+    }
+
+    @Test
+    void rejectsTokenWithNonUuidUserId() {
+        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", 7L).claim("role", "DRIVER")
                 .expiration(Date.from(Instant.now().plusSeconds(600))).signWith(KEY).compact();
 
         assertThatThrownBy(() -> jwtService.parse(token)).isInstanceOf(JwtException.class);
@@ -53,7 +66,8 @@ class JwtServiceTest {
     @Test
     void rejectsTokenSignedWithAnotherSecret() {
         SecretKey otherKey = Keys.hmacShaKeyFor("another-secret-that-is-at-least-32-bytes".getBytes(StandardCharsets.UTF_8));
-        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", 7L).claim("role", "DRIVER")
+        String token = Jwts.builder().subject("ana@upc.edu.pe").claim("userId", USER_ID.toString())
+                .claim("role", "DRIVER")
                 .signWith(otherKey).compact();
 
         assertThatThrownBy(() -> jwtService.parse(token)).isInstanceOf(JwtException.class);

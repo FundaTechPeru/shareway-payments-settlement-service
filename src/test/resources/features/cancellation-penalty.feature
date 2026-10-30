@@ -10,7 +10,7 @@ Feature: Cancellation penalty (US12)
   Scenario: Late passenger cancellation charges the penalty
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "PASSENGER_CANCELLED",
+      {"bookingId": "{uuid:300}", "reason": "PASSENGER_CANCELLED",
        "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 200
@@ -21,7 +21,7 @@ Feature: Cancellation penalty (US12)
   Scenario: Early passenger cancellation voids the authorization
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "PASSENGER_CANCELLED",
+      {"bookingId": "{uuid:300}", "reason": "PASSENGER_CANCELLED",
        "cancelledAt": "2026-10-10T05:00:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 200
@@ -31,7 +31,7 @@ Feature: Cancellation penalty (US12)
   Scenario: No-show is always penalized
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "NO_SHOW",
+      {"bookingId": "{uuid:300}", "reason": "NO_SHOW",
        "cancelledAt": "2026-10-10T08:05:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 200
@@ -41,7 +41,7 @@ Feature: Cancellation penalty (US12)
   Scenario: No driver available never penalizes the passenger
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "NO_DRIVER_AVAILABLE",
+      {"bookingId": "{uuid:300}", "reason": "NO_DRIVER_AVAILABLE",
        "cancelledAt": "2026-10-10T07:59:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 200
@@ -51,13 +51,13 @@ Feature: Cancellation penalty (US12)
   Scenario: Repeating the same cancellation returns the same result
     Given I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "PASSENGER_CANCELLED",
+      {"bookingId": "{uuid:300}", "reason": "PASSENGER_CANCELLED",
        "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     And I save the response field "penaltyId" as "penaltyId"
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "PASSENGER_CANCELLED",
+      {"bookingId": "{uuid:300}", "reason": "PASSENGER_CANCELLED",
        "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 200
@@ -67,7 +67,7 @@ Feature: Cancellation penalty (US12)
   Scenario: Cancelling a booking without payment is not found
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 999, "reason": "NO_SHOW",
+      {"bookingId": "{uuid:999}", "reason": "NO_SHOW",
        "cancelledAt": "2026-10-10T08:05:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 404
@@ -75,12 +75,12 @@ Feature: Cancellation penalty (US12)
   Scenario: Cancelling an already captured booking is a conflict
     Given I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 950, "driverId": 2, "completedAt": "2026-10-10T09:00:00Z",
-       "bookings": [{"bookingId": 300, "finalAmount": 40.00}]}
+      {"tripId": "{uuid:950}", "driverId": "{uuid:2}", "completedAt": "2026-10-10T09:00:00Z",
+       "bookings": [{"bookingId": "{uuid:300}", "finalAmount": 40.00}]}
       """
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "PASSENGER_CANCELLED",
+      {"bookingId": "{uuid:300}", "reason": "PASSENGER_CANCELLED",
        "cancelledAt": "2026-10-10T05:00:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 409
@@ -94,15 +94,15 @@ Feature: Cancellation penalty (US12)
 
     Examples:
       | body                                                                                                                  |
-      | {"bookingId": 300, "reason": "CHANGED_MIND", "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"} |
-      | {"bookingId": 300, "reason": "NO_SHOW", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}                               |
-      | {"bookingId": -1, "reason": "NO_SHOW", "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"} |
+      | {"bookingId": "{uuid:300}", "reason": "CHANGED_MIND", "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"} |
+      | {"bookingId": "{uuid:300}", "reason": "NO_SHOW", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}                               |
+      | {"bookingId": "not-a-uuid", "reason": "NO_SHOW", "cancelledAt": "2026-10-10T07:50:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"} |
 
   Scenario: Booking cancelled without API key is unauthorized
     Given I am not authenticated
     When I send a POST request to "/api/v1/internal/events/booking-cancelled" with body:
       """
-      {"bookingId": 300, "reason": "NO_SHOW",
+      {"bookingId": "{uuid:300}", "reason": "NO_SHOW",
        "cancelledAt": "2026-10-10T08:05:00Z", "scheduledDepartureAt": "2026-10-10T08:00:00Z"}
       """
     Then the response status should be 401

@@ -7,6 +7,7 @@ import com.fundatech.shareway.paymentsettlement.shared.exception.ConflictExcepti
 import com.fundatech.shareway.paymentsettlement.shared.exception.ResourceNotFoundException;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class PaymentMethodService {
      * Registra una tarjeta tokenizada; falla con 409 si el pasajero ya tiene ese token activo.
      */
     @Transactional
-    public PaymentMethod register(Long passengerId, String cardToken, CardBrand brand, String last4,
+    public PaymentMethod register(UUID passengerId, String cardToken, CardBrand brand, String last4,
                                   int expMonth, int expYear) {
         if (paymentMethods.existsActiveByPassengerIdAndCardToken(passengerId, cardToken)) {
             throw new ConflictException("Card is already registered");
@@ -37,7 +38,7 @@ public class PaymentMethodService {
     }
 
     @Transactional(readOnly = true)
-    public List<PaymentMethod> listActive(Long passengerId) {
+    public List<PaymentMethod> listActive(UUID passengerId) {
         return paymentMethods.findActiveByPassengerId(passengerId);
     }
 
@@ -45,7 +46,7 @@ public class PaymentMethodService {
      * Desactiva lógicamente una tarjeta propia; una tarjeta ajena o ya inactiva se trata como inexistente.
      */
     @Transactional
-    public void deactivate(Long passengerId, Long paymentMethodId) {
+    public void deactivate(UUID passengerId, UUID paymentMethodId) {
         PaymentMethod method = paymentMethods.findById(paymentMethodId)
                 .filter(candidate -> candidate.isUsableBy(passengerId))
                 .orElseThrow(() -> new ResourceNotFoundException("Payment method not found"));

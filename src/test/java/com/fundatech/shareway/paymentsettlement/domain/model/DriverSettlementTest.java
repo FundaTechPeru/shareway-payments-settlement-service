@@ -7,6 +7,7 @@ import com.fundatech.shareway.paymentsettlement.domain.policy.PercentageCommissi
 import com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -62,7 +63,7 @@ class DriverSettlementTest {
     }
 
     private DriverSettlement settlementFor(String gross) {
-        return DriverSettlement.create(1L, 2L, Money.of(new BigDecimal(gross), "PEN"), Instant.now(),
-                FIFTEEN_PERCENT);
+        return DriverSettlement.create(UUID.randomUUID(), UUID.randomUUID(), Money.of(new BigDecimal(gross), "PEN"),
+                Instant.now(), FIFTEEN_PERCENT);
     }
 }

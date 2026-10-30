@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Agregado que representa el pago de una reserva. Hay como máximo un pago por {@code bookingId}.
@@ -21,17 +22,17 @@ import java.time.Instant;
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "booking_id", nullable = false, unique = true)
-    private Long bookingId;
+    private UUID bookingId;
 
     @Column(name = "passenger_id", nullable = false)
-    private Long passengerId;
+    private UUID passengerId;
 
     @Column(name = "payment_method_id", nullable = false)
-    private Long paymentMethodId;
+    private UUID paymentMethodId;
 
     @Embedded
     @AttributeOverride(name = "amount", column = @Column(name = "authorized_amount", precision = 12, scale = 2,
@@ -73,7 +74,7 @@ public class Payment {
     /**
      * Crea un pago PENDING para la reserva antes de consultar a la pasarela.
      */
-    public static Payment create(Long bookingId, Long passengerId, Long paymentMethodId, Money amount) {
+    public static Payment create(UUID bookingId, UUID passengerId, UUID paymentMethodId, Money amount) {
         if (!amount.isPositive()) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
@@ -90,7 +91,7 @@ public class Payment {
     /**
      * Prepara un nuevo intento sobre un pago REJECTED de la misma reserva y del mismo pasajero.
      */
-    public void retry(Long passengerId, Long paymentMethodId, Money amount) {
+    public void retry(UUID passengerId, UUID paymentMethodId, Money amount) {
         requireStatus(PaymentStatus.REJECTED);
         if (!this.passengerId.equals(passengerId)) {
             throw new ConflictException("Booking already has a payment from another passenger");
@@ -179,19 +180,19 @@ public class Payment {
         }
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public Long getBookingId() {
+    public UUID getBookingId() {
         return bookingId;
     }
 
-    public Long getPassengerId() {
+    public UUID getPassengerId() {
         return passengerId;
     }
 
-    public Long getPaymentMethodId() {
+    public UUID getPaymentMethodId() {
         return paymentMethodId;
     }
 

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ public class AdminSettlementController {
 
     @PatchMapping("/{id}/mark-paid")
     @Operation(summary = "Mark a pending settlement as paid")
-    public SettlementResponse markPaid(@PathVariable Long id) {
+    public SettlementResponse markPaid(@PathVariable UUID id) {
         return SettlementResponse.from(settlementService.markPaid(id));
     }
 }

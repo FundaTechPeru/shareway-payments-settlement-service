@@ -11,8 +11,8 @@ Feature: Payment capture when a trip is completed (US25)
   Scenario: Completed trip captures the bookings and creates a pending settlement
     When I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 900, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z",
-       "bookings": [{"bookingId": 200, "finalAmount": 40.00}, {"bookingId": 201, "finalAmount": 30.00}]}
+      {"tripId": "{uuid:900}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z",
+       "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 40.00}, {"bookingId": "{uuid:201}", "finalAmount": 30.00}]}
       """
     Then the response status should be 201
     And the response field "grossAmount" should be "70.00"
@@ -26,14 +26,14 @@ Feature: Payment capture when a trip is completed (US25)
   Scenario: Repeating the same trip completion is idempotent
     Given I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 901, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z",
-       "bookings": [{"bookingId": 200, "finalAmount": 33.33}]}
+      {"tripId": "{uuid:901}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z",
+       "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 33.33}]}
       """
     And I save the response field "id" as "settlementId"
     When I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 901, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z",
-       "bookings": [{"bookingId": 200, "finalAmount": 33.33}]}
+      {"tripId": "{uuid:901}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z",
+       "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 33.33}]}
       """
     Then the response status should be 200
     And the response field "id" should be "{settlementId}"
@@ -44,8 +44,8 @@ Feature: Payment capture when a trip is completed (US25)
   Scenario: Final amount above the authorized amount changes nothing
     When I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 902, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z",
-       "bookings": [{"bookingId": 200, "finalAmount": 40.00}, {"bookingId": 201, "finalAmount": 35.51}]}
+      {"tripId": "{uuid:902}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z",
+       "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 40.00}, {"bookingId": "{uuid:201}", "finalAmount": 35.51}]}
       """
     Then the response status should be 409
     And I am authenticated as a PASSENGER with id 1
@@ -55,8 +55,8 @@ Feature: Payment capture when a trip is completed (US25)
   Scenario: Booking without an authorized payment is a conflict
     When I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 903, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z",
-       "bookings": [{"bookingId": 200, "finalAmount": 20.00}, {"bookingId": 999, "finalAmount": 10.00}]}
+      {"tripId": "{uuid:903}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z",
+       "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 20.00}, {"bookingId": "{uuid:999}", "finalAmount": 10.00}]}
       """
     Then the response status should be 409
     And I am authenticated as a PASSENGER with id 1
@@ -72,15 +72,15 @@ Feature: Payment capture when a trip is completed (US25)
 
     Examples:
       | body                                                                                                         |
-      | {"tripId": 904, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z", "bookings": []}                        |
-      | {"tripId": 904, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z", "bookings": [{"bookingId": 200, "finalAmount": -1}]} |
-      | {"tripId": 904, "driverId": 2, "bookings": [{"bookingId": 200, "finalAmount": 10.00}]}                       |
+      | {"tripId": "{uuid:904}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z", "bookings": []}                        |
+      | {"tripId": "{uuid:904}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z", "bookings": [{"bookingId": "{uuid:200}", "finalAmount": -1}]} |
+      | {"tripId": "{uuid:904}", "driverId": "{uuid:2}", "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 10.00}]}                       |
 
   Scenario: Trip completed without API key is unauthorized
     Given I am not authenticated
     When I send a POST request to "/api/v1/internal/events/trip-completed" with body:
       """
-      {"tripId": 905, "driverId": 2, "completedAt": "2026-10-01T15:30:00Z",
-       "bookings": [{"bookingId": 200, "finalAmount": 40.00}]}
+      {"tripId": "{uuid:905}", "driverId": "{uuid:2}", "completedAt": "2026-10-01T15:30:00Z",
+       "bookings": [{"bookingId": "{uuid:200}", "finalAmount": 40.00}]}
       """
     Then the response status should be 401

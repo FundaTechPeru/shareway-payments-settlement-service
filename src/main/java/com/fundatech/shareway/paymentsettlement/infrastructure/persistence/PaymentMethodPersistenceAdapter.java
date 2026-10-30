@@ -4,6 +4,7 @@ import com.fundatech.shareway.paymentsettlement.domain.model.PaymentMethod;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentMethodRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -24,17 +25,17 @@ public class PaymentMethodPersistenceAdapter implements PaymentMethodRepository 
     }
 
     @Override
-    public Optional<PaymentMethod> findById(Long id) {
+    public Optional<PaymentMethod> findById(UUID id) {
         return jpa.findById(id);
     }
 
     @Override
-    public List<PaymentMethod> findActiveByPassengerId(Long passengerId) {
-        return jpa.findByPassengerIdAndActiveTrueOrderByIdAsc(passengerId);
+    public List<PaymentMethod> findActiveByPassengerId(UUID passengerId) {
+        return jpa.findByPassengerIdAndActiveTrueOrderByCreatedAtAsc(passengerId);
     }
 
     @Override
-    public boolean existsActiveByPassengerIdAndCardToken(Long passengerId, String cardToken) {
+    public boolean existsActiveByPassengerIdAndCardToken(UUID passengerId, String cardToken) {
         return jpa.existsByPassengerIdAndCardTokenAndActiveTrue(passengerId, cardToken);
     }
 }

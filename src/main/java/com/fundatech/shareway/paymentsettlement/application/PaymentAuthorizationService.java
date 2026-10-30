@@ -5,8 +5,8 @@ import com.fundatech.shareway.paymentsettlement.domain.event.PaymentRejected;
 import com.fundatech.shareway.paymentsettlement.domain.model.Money;
 import com.fundatech.shareway.paymentsettlement.domain.model.Payment;
 import com.fundatech.shareway.paymentsettlement.domain.model.PaymentMethod;
-import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentGateway;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentGateway.GatewayAuthorization;
+import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentGateway;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentMethodRepository;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentRepository;
 import com.fundatech.shareway.paymentsettlement.infrastructure.messaging.DomainEventPublisher;
@@ -15,6 +15,7 @@ import com.fundatech.shareway.paymentsettlement.shared.exception.ResourceNotFoun
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +46,7 @@ public class PaymentAuthorizationService {
      * @throws PaymentDeclinedException si la pasarela rechaza la tarjeta
      */
     @Transactional(noRollbackFor = PaymentDeclinedException.class)
-    public IdempotentResult<Payment> authorize(Long bookingId, Long passengerId, Long paymentMethodId,
+    public IdempotentResult<Payment> authorize(UUID bookingId, UUID passengerId, UUID paymentMethodId,
                                                BigDecimal amount, String currency) {
         Money money = Money.of(amount, currency);
         Optional<Payment> existing = payments.findByBookingId(bookingId);

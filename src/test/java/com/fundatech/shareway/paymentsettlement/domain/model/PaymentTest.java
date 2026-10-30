@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,11 +14,15 @@ import org.junit.jupiter.api.Test;
  */
 class PaymentTest {
 
+    private static final UUID BOOKING = UUID.randomUUID();
+    private static final UUID PASSENGER = UUID.randomUUID();
+    private static final UUID CARD = UUID.randomUUID();
+    private static final UUID OTHER_CARD = UUID.randomUUID();
     private static final Money AMOUNT = Money.of(new BigDecimal("30.00"), "PEN");
 
     @Test
     void authorizesPendingPayment() {
-        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        Payment payment = Payment.create(BOOKING, PASSENGER, CARD, AMOUNT);
 
         payment.markAuthorized("sim_ref", Instant.now());
 
@@ -27,13 +32,13 @@ class PaymentTest {
 
     @Test
     void rejectsNonPositiveAmount() {
-        assertThatThrownBy(() -> Payment.create(100L, 1L, 10L, Money.zero("PEN")))
+        assertThatThrownBy(() -> Payment.create(BOOKING, PASSENGER, CARD, Money.zero("PEN")))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void cannotAuthorizeTwice() {
-        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        Payment payment = Payment.create(BOOKING, PASSENGER, CARD, AMOUNT);
         payment.markAuthorized("sim_ref", Instant.now());
 
         assertThatThrownBy(() -> payment.markAuthorized("sim_other", Instant.now()))
@@ -42,13 +47,13 @@ class PaymentTest {
 
     @Test
     void rejectedPaymentCanBeRetriedBySamePassenger() {
-        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        Payment payment = Payment.create(BOOKING, PASSENGER, CARD, AMOUNT);
         payment.markRejected();
 
-        payment.retry(1L, 11L, AMOUNT);
+        payment.retry(PASSENGER, OTHER_CARD, AMOUNT);
         payment.markAuthorized("sim_ref", Instant.now());
 
-        assertThat(payment.getPaymentMethodId()).isEqualTo(11L);
+        assertThat(payment.getPaymentMethodId()).isEqualTo(OTHER_CARD);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.AUTHORIZED);
     }
 
@@ -73,7 +78,7 @@ class PaymentTest {
 
     @Test
     void cannotCaptureRejectedPayment() {
-        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        Payment payment = Payment.create(BOOKING, PASSENGER, CARD, AMOUNT);
         payment.markRejected();
 
         assertThatThrownBy(() -> payment.capture(AMOUNT, Instant.now())).isInstanceOf(ConflictException.class);
@@ -117,16 +122,16 @@ class PaymentTest {
     }
 
     private Payment authorizedPayment() {
-        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        Payment payment = Payment.create(BOOKING, PASSENGER, CARD, AMOUNT);
         payment.markAuthorized("sim_ref", Instant.now());
         return payment;
     }
 
     @Test
     void authorizedPaymentCannotBeRetried() {
-        Payment payment = Payment.create(100L, 1L, 10L, AMOUNT);
+        Payment payment = Payment.create(BOOKING, PASSENGER, CARD, AMOUNT);
         payment.markAuthorized("sim_ref", Instant.now());
 
-        assertThatThrownBy(() -> payment.retry(1L, 11L, AMOUNT)).isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> payment.retry(PASSENGER, OTHER_CARD, AMOUNT)).isInstanceOf(ConflictException.class);
     }
 }
