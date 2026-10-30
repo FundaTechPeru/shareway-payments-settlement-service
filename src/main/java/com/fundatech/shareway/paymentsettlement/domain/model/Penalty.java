@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Penalidad cobrada al pasajero por cancelar tarde o no presentarse.
@@ -20,17 +21,17 @@ import java.time.Instant;
 public class Penalty {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "payment_id", nullable = false)
-    private Long paymentId;
+    private UUID paymentId;
 
     @Column(name = "booking_id", nullable = false, unique = true)
-    private Long bookingId;
+    private UUID bookingId;
 
     @Column(name = "passenger_id", nullable = false)
-    private Long passengerId;
+    private UUID passengerId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -62,19 +63,19 @@ public class Penalty {
         return penalty;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public Long getPaymentId() {
+    public UUID getPaymentId() {
         return paymentId;
     }
 
-    public Long getBookingId() {
+    public UUID getBookingId() {
         return bookingId;
     }
 
-    public Long getPassengerId() {
+    public UUID getPassengerId() {
         return passengerId;
     }
 

@@ -12,7 +12,7 @@ Feature: Payment authorization when booking (US04)
   Scenario: Approved authorization creates an AUTHORIZED payment
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 100, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 25.50, "currency": "PEN"}
+      {"bookingId": "{uuid:100}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 25.50, "currency": "PEN"}
       """
     Then the response status should be 201
     And the response field "status" should be "AUTHORIZED"
@@ -22,12 +22,12 @@ Feature: Payment authorization when booking (US04)
   Scenario: Repeating the same authorization is idempotent
     Given I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 101, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 18.00, "currency": "PEN"}
+      {"bookingId": "{uuid:101}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 18.00, "currency": "PEN"}
       """
     And I save the response field "id" as "paymentId"
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 101, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 18.00, "currency": "PEN"}
+      {"bookingId": "{uuid:101}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 18.00, "currency": "PEN"}
       """
     Then the response status should be 200
     And the response field "id" should be "{paymentId}"
@@ -36,7 +36,7 @@ Feature: Payment authorization when booking (US04)
   Scenario: Declined card returns 402 and stores a REJECTED payment that can be retried
     Given I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 102, "passengerId": 1, "paymentMethodId": {declinedCardId}, "amount": 30.00, "currency": "PEN"}
+      {"bookingId": "{uuid:102}", "passengerId": "{uuid:1}", "paymentMethodId": "{declinedCardId}", "amount": 30.00, "currency": "PEN"}
       """
     And the response status should be 402
     And I am authenticated as a PASSENGER with id 1
@@ -45,7 +45,7 @@ Feature: Payment authorization when booking (US04)
     And I save the response field "[0].id" as "rejectedId"
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 102, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 30.00, "currency": "PEN"}
+      {"bookingId": "{uuid:102}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 30.00, "currency": "PEN"}
       """
     Then the response status should be 201
     And the response field "id" should be "{rejectedId}"
@@ -54,7 +54,7 @@ Feature: Payment authorization when booking (US04)
   Scenario: Gateway outage returns 503 and stores no authorized payment
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 103, "passengerId": 1, "paymentMethodId": {downCardId}, "amount": 30.00, "currency": "PEN"}
+      {"bookingId": "{uuid:103}", "passengerId": "{uuid:1}", "paymentMethodId": "{downCardId}", "amount": 30.00, "currency": "PEN"}
       """
     Then the response status should be 503
     And I am authenticated as a PASSENGER with id 1
@@ -64,7 +64,7 @@ Feature: Payment authorization when booking (US04)
   Scenario Outline: Invalid amount or currency is rejected
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 104, "passengerId": 1, "paymentMethodId": {cardId}, "amount": <amount>, "currency": "<currency>"}
+      {"bookingId": "{uuid:104}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": <amount>, "currency": "<currency>"}
       """
     Then the response status should be 400
 
@@ -78,7 +78,7 @@ Feature: Payment authorization when booking (US04)
   Scenario: Payment method of another passenger is not found
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 105, "passengerId": 2, "paymentMethodId": {cardId}, "amount": 10.00, "currency": "PEN"}
+      {"bookingId": "{uuid:105}", "passengerId": "{uuid:2}", "paymentMethodId": "{cardId}", "amount": 10.00, "currency": "PEN"}
       """
     Then the response status should be 404
 
@@ -86,7 +86,7 @@ Feature: Payment authorization when booking (US04)
     Given I am not authenticated
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 106, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 10.00, "currency": "PEN"}
+      {"bookingId": "{uuid:106}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 10.00, "currency": "PEN"}
       """
     Then the response status should be 401
 
@@ -94,14 +94,14 @@ Feature: Payment authorization when booking (US04)
     Given I use the internal API key "wrong-key"
     When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 106, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 10.00, "currency": "PEN"}
+      {"bookingId": "{uuid:106}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 10.00, "currency": "PEN"}
       """
     Then the response status should be 401
 
   Scenario: Passenger cannot see another passenger's payment
     Given I send a POST request to "/api/v1/internal/payments/authorizations" with body:
       """
-      {"bookingId": 107, "passengerId": 1, "paymentMethodId": {cardId}, "amount": 10.00, "currency": "PEN"}
+      {"bookingId": "{uuid:107}", "passengerId": "{uuid:1}", "paymentMethodId": "{cardId}", "amount": 10.00, "currency": "PEN"}
       """
     And I save the response field "id" as "paymentId"
     And I am authenticated as a PASSENGER with id 2

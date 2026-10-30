@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.UUID;
 
 /**
  * Tarjeta tokenizada de un pasajero. Nunca almacena el número completo, solo el token, la marca y los últimos 4 dígitos.
@@ -19,11 +20,11 @@ import java.time.YearMonth;
 public class PaymentMethod {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "passenger_id", nullable = false)
-    private Long passengerId;
+    private UUID passengerId;
 
     @Column(name = "card_token", nullable = false, length = 100)
     private String cardToken;
@@ -53,7 +54,7 @@ public class PaymentMethod {
     /**
      * Registra una tarjeta nueva y activa; rechaza tarjetas vencidas respecto al mes actual.
      */
-    public static PaymentMethod register(Long passengerId, String cardToken, CardBrand brand, String last4,
+    public static PaymentMethod register(UUID passengerId, String cardToken, CardBrand brand, String last4,
                                          int expMonth, int expYear, YearMonth currentMonth) {
         if (YearMonth.of(expYear, expMonth).isBefore(currentMonth)) {
             throw new IllegalArgumentException("Card is expired");
@@ -80,15 +81,15 @@ public class PaymentMethod {
     /**
      * Indica si la tarjeta está activa y pertenece al pasajero indicado.
      */
-    public boolean isUsableBy(Long passengerId) {
+    public boolean isUsableBy(UUID passengerId) {
         return active && this.passengerId.equals(passengerId);
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public Long getPassengerId() {
+    public UUID getPassengerId() {
         return passengerId;
     }
 

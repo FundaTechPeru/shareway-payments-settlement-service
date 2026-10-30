@@ -7,6 +7,7 @@ import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentMethodR
 import io.cucumber.java.en.Given;
 import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.util.UUID;
 
 /**
  * Steps que preparan datos de pagos directamente sobre los puertos y servicios de la aplicación.
@@ -26,16 +27,18 @@ public class PaymentSteps {
 
     @Given("passenger {long} has an active payment method with card token {string} saved as {string}")
     public void passengerHasPaymentMethod(Long passengerId, String cardToken, String name) {
-        context.put(name, registerCard(passengerId, cardToken).getId());
+        context.put(name, registerCard(TestIds.uuid(passengerId), cardToken).getId());
     }
 
     @Given("booking {long} has an authorized payment of {string} PEN for passenger {long}")
     public void bookingHasAuthorizedPayment(Long bookingId, String amount, Long passengerId) {
-        PaymentMethod method = registerCard(passengerId, "tok_booking_" + bookingId);
-        authorizationService.authorize(bookingId, passengerId, method.getId(), new BigDecimal(amount), "PEN");
+        UUID passenger = TestIds.uuid(passengerId);
+        PaymentMethod method = registerCard(passenger, "tok_booking_" + bookingId);
+        authorizationService.authorize(TestIds.uuid(bookingId), passenger, method.getId(), new BigDecimal(amount),
+                "PEN");
     }
 
-    private PaymentMethod registerCard(Long passengerId, String cardToken) {
+    private PaymentMethod registerCard(UUID passengerId, String cardToken) {
         return paymentMethods.save(PaymentMethod.register(passengerId, cardToken, CardBrand.VISA, "4242", 12, 2099,
                 YearMonth.now()));
     }

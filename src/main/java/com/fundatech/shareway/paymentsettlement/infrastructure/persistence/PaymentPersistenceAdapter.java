@@ -4,6 +4,7 @@ import com.fundatech.shareway.paymentsettlement.domain.model.Payment;
 import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -24,17 +25,17 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
     }
 
     @Override
-    public Optional<Payment> findByBookingId(Long bookingId) {
+    public Optional<Payment> findByBookingId(UUID bookingId) {
         return jpa.findByBookingId(bookingId);
     }
 
     @Override
-    public Optional<Payment> findByIdAndPassengerId(Long id, Long passengerId) {
+    public Optional<Payment> findByIdAndPassengerId(UUID id, UUID passengerId) {
         return jpa.findByIdAndPassengerId(id, passengerId);
     }
 
     @Override
-    public List<Payment> findByPassengerId(Long passengerId) {
-        return jpa.findByPassengerIdOrderByIdDesc(passengerId);
+    public List<Payment> findByPassengerId(UUID passengerId) {
+        return jpa.findByPassengerIdOrderByCreatedAtDesc(passengerId);
     }
 }

@@ -26,8 +26,8 @@ public class SettlementSteps {
 
     @Given("driver {long} has a settlement for trip {long} with gross {string} PEN saved as {string}")
     public void driverHasSettlement(Long driverId, Long tripId, String gross, String name) {
-        DriverSettlement settlement = settlements.save(DriverSettlement.create(tripId, driverId,
-                Money.of(new BigDecimal(gross), Money.PEN), Instant.now(), commissionPolicy));
+        DriverSettlement settlement = settlements.save(DriverSettlement.create(TestIds.uuid(tripId),
+                TestIds.uuid(driverId), Money.of(new BigDecimal(gross), Money.PEN), Instant.now(), commissionPolicy));
         context.put(name, settlement.getId());
     }
 }

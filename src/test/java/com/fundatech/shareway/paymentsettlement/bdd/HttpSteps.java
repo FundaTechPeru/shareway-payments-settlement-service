@@ -37,17 +37,17 @@ public class HttpSteps {
 
     @Given("I am authenticated as a {word} with id {long}")
     public void authenticatedAs(String role, Long userId) {
-        context.setBearerToken(tokens.token(userId, role));
+        context.setBearerToken(tokens.token(TestIds.uuid(userId), role));
     }
 
     @Given("I am authenticated with an expired {word} token with id {long}")
     public void authenticatedWithExpiredToken(String role, Long userId) {
-        context.setBearerToken(tokens.expiredToken(userId, role));
+        context.setBearerToken(tokens.expiredToken(TestIds.uuid(userId), role));
     }
 
     @Given("I am authenticated with a token without role for user {long}")
     public void authenticatedWithoutRole(Long userId) {
-        context.setBearerToken(tokens.tokenWithoutRole(userId));
+        context.setBearerToken(tokens.tokenWithoutRole(TestIds.uuid(userId)));
     }
 
     @Given("I am not authenticated")
@@ -118,7 +118,8 @@ public class HttpSteps {
     public void everyItemField(String field, String expected) throws Exception {
         List<Object> values = JsonPath.read(context.getLastResult().getResponse().getContentAsString(),
                 "$[*]." + field);
-        assertThat(values).isNotEmpty().allSatisfy(value -> assertThat(String.valueOf(value)).isEqualTo(expected));
+        String resolved = context.resolve(expected);
+        assertThat(values).isNotEmpty().allSatisfy(value -> assertThat(String.valueOf(value)).isEqualTo(resolved));
     }
 
     @Then("the response should report an error on field {string}")

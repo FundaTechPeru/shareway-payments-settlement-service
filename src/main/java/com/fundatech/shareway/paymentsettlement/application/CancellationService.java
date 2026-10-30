@@ -14,6 +14,7 @@ import com.fundatech.shareway.paymentsettlement.infrastructure.messaging.DomainE
 import com.fundatech.shareway.paymentsettlement.shared.exception.ResourceNotFoundException;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,7 +53,7 @@ public class CancellationService {
      * @throws com.fundatech.shareway.paymentsettlement.shared.exception.ConflictException si el pago no está AUTHORIZED
      */
     @Transactional
-    public CancellationOutcome cancel(Long bookingId, CancellationReason reason, Instant cancelledAt,
+    public CancellationOutcome cancel(UUID bookingId, CancellationReason reason, Instant cancelledAt,
                                       Instant scheduledDepartureAt) {
         Payment payment = payments.findByBookingId(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("No payment found for booking " + bookingId));

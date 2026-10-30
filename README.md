@@ -120,10 +120,10 @@ Se publican con `DomainEventPublisher` sobre el `ApplicationEventPublisher` de S
 
 ## Autenticación
 
-Este servicio **no emite tokens**. Los emite Driver Management (HS256, mismo `JWT_SECRET`) con los claims `sub` (email), `userId` (Long) y `role` (`PASSENGER`, `DRIVER` o `ADMIN`).
+Este servicio **no emite tokens**. Los emite Driver Management (HS256, mismo `JWT_SECRET`) con los claims `sub` (email), `userId` (UUID en texto) y `role` (`PASSENGER`, `DRIVER` o `ADMIN`).
 
 - `JwtAuthenticationFilter` valida firma y expiración y arma el usuario autenticado solo con los claims; aquí no existe tabla de usuarios.
-- Un token expirado, mal firmado o sin `userId`/`role` devuelve 401.
+- Un token expirado, mal firmado, sin `userId`/`role` o con un `userId` que no es UUID devuelve 401.
 - Si un pasajero se vuelve conductor, debe volver a iniciar sesión para que su token traiga el rol `DRIVER`.
 
 ## Datos de tarjeta
@@ -150,7 +150,8 @@ Todas las respuestas de error tienen el cuerpo `{timestamp, status, error, messa
 - Los repositorios y la pasarela son puertos en `domain/repository`; `infrastructure` contiene los adaptadores.
 - Atajo pragmático: las entidades de dominio llevan anotaciones JPA en lugar de tener un modelo de persistencia separado.
 - Dinero siempre como `Money` (`BigDecimal`, 2 decimales, HALF_UP). Moneda única `PEN`; otra moneda responde 400.
-- `passenger_id` y `driver_id` son referencias por id a Driver Management, sin claves foráneas.
+- Todos los identificadores son `UUID`: los ids propios (`payment_methods`, `payments`, `penalties`, `driver_settlements`) los genera JPA, y las referencias externas (`passenger_id`, `driver_id`, `booking_id`, `trip_id`) llegan de Driver Management, Booking & Pricing y Trip Execution, sin claves foráneas. Un id que no es UUID en el cuerpo o en la ruta devuelve 400.
+- Las bases creadas antes del cambio a UUID tienen columnas `bigint` que `ddl-auto=update` no convierte: hay que recrear la BD de desarrollo (`docker compose down -v`).
 - Tablas: `payment_methods`, `payments`, `penalties`, `driver_settlements`.
 
 ## Pruebas

@@ -13,7 +13,7 @@ Feature: Driver earnings and settlement payouts
     When I send a GET request to "/api/v1/settlements/me"
     Then the response status should be 200
     And the response should contain 2 items
-    And every item field "driverId" should be "2"
+    And every item field "driverId" should be "{uuid:2}"
 
   Scenario: Driver sees the detail of one of their settlements
     Given I am authenticated as a DRIVER with id 2
@@ -73,7 +73,7 @@ Feature: Driver earnings and settlement payouts
 
   Scenario: Marking an unknown settlement is not found
     Given I am authenticated as a ADMIN with id 3
-    When I send a PATCH request to "/api/v1/admin/settlements/999999/mark-paid"
+    When I send a PATCH request to "/api/v1/admin/settlements/{uuid:999999}/mark-paid"
     Then the response status should be 404
 
   Scenario: Driver cannot mark settlements as paid

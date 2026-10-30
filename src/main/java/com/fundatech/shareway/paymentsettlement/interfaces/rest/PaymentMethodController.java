@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -51,7 +52,7 @@ public class PaymentMethodController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Deactivate one of the authenticated passenger's cards")
-    public void deactivate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id) {
+    public void deactivate(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
         paymentMethodService.deactivate(user.userId(), id);
     }
 }

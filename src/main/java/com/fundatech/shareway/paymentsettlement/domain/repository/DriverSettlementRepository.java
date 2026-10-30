@@ -4,6 +4,7 @@ import com.fundatech.shareway.paymentsettlement.domain.model.DriverSettlement;
 import com.fundatech.shareway.paymentsettlement.domain.model.SettlementStatus;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Puerto de persistencia de las liquidaciones a conductores.
@@ -12,13 +13,13 @@ public interface DriverSettlementRepository {
 
     DriverSettlement save(DriverSettlement settlement);
 
-    Optional<DriverSettlement> findById(Long id);
+    Optional<DriverSettlement> findById(UUID id);
 
-    Optional<DriverSettlement> findByTripId(Long tripId);
+    Optional<DriverSettlement> findByTripId(UUID tripId);
 
-    Optional<DriverSettlement> findByIdAndDriverId(Long id, Long driverId);
+    Optional<DriverSettlement> findByIdAndDriverId(UUID id, UUID driverId);
 
-    List<DriverSettlement> findByDriverId(Long driverId);
+    List<DriverSettlement> findByDriverId(UUID driverId);
 
     List<DriverSettlement> findAll(Optional<SettlementStatus> status);
 }

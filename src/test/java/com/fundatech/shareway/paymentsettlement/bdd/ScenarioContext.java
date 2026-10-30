@@ -3,6 +3,7 @@ package com.fundatech.shareway.paymentsettlement.bdd;
 import io.cucumber.spring.ScenarioScope;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -12,6 +13,8 @@ import org.springframework.test.web.servlet.MvcResult;
 @Component
 @ScenarioScope
 public class ScenarioContext {
+
+    private static final Pattern UUID_ALIAS = Pattern.compile("\\{uuid:(\\d+)}");
 
     private String bearerToken;
     private String apiKey;
@@ -47,10 +50,12 @@ public class ScenarioContext {
     }
 
     /**
-     * Sustituye los marcadores {@code {nombre}} del texto por las variables guardadas en el escenario.
+     * Sustituye los marcadores {@code {uuid:N}} por el UUID determinista del alias N y los marcadores
+     * {@code {nombre}} por las variables guardadas en el escenario.
      */
     public String resolve(String text) {
-        String resolved = text;
+        String resolved = UUID_ALIAS.matcher(text)
+                .replaceAll(match -> TestIds.uuid(Long.parseLong(match.group(1))).toString());
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             resolved = resolved.replace("{" + entry.getKey() + "}", entry.getValue());
         }

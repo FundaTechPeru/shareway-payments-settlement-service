@@ -4,12 +4,13 @@ import com.fundatech.shareway.paymentsettlement.application.CancellationService.
 import com.fundatech.shareway.paymentsettlement.domain.model.CancellationReason;
 import com.fundatech.shareway.paymentsettlement.domain.model.PaymentStatus;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Resultado de procesar una cancelación: estado final del pago y penalidad cobrada, si hubo.
  */
-public record CancellationResponse(Long bookingId, Long paymentId, PaymentStatus paymentStatus,
-                                   CancellationReason reason, boolean penaltyApplied, Long penaltyId,
+public record CancellationResponse(UUID bookingId, UUID paymentId, PaymentStatus paymentStatus,
+                                   CancellationReason reason, boolean penaltyApplied, UUID penaltyId,
                                    BigDecimal penaltyAmount, String currency) {
 
     public static CancellationResponse from(CancellationOutcome outcome) {
