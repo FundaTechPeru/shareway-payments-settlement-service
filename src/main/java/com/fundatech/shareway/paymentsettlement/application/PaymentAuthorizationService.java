@@ -12,6 +12,7 @@ import com.fundatech.shareway.paymentsettlement.domain.repository.PaymentReposit
 import com.fundatech.shareway.paymentsettlement.infrastructure.messaging.DomainEventPublisher;
 import com.fundatech.shareway.paymentsettlement.shared.exception.PaymentDeclinedException;
 import com.fundatech.shareway.paymentsettlement.shared.exception.ResourceNotFoundException;
+import com.fundatech.shareway.paymentsettlement.shared.exception.UnprocessableRequestException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
@@ -42,8 +43,11 @@ public class PaymentAuthorizationService {
      * Autoriza el monto de la reserva de forma idempotente por {@code bookingId}.
      * Si la reserva ya tiene un pago autorizado o capturado lo devuelve sin llamar a la pasarela;
      * si estaba rechazado reintenta sobre el mismo registro. Un rechazo queda guardado como REJECTED.
+     * Si {@code paymentMethodId} es {@code null} se usa el método de pago activo más reciente del pasajero.
      *
      * @throws PaymentDeclinedException si la pasarela rechaza la tarjeta
+     * @throws ResourceNotFoundException si el método indicado no existe, está inactivo o es de otro pasajero
+     * @throws UnprocessableRequestException si no se indicó método y el pasajero no tiene ninguno activo
      */
     @Transactional(noRollbackFor = PaymentDeclinedException.class)
     public IdempotentResult<Payment> authorize(UUID bookingId, UUID passengerId, UUID paymentMethodId,
@@ -53,13 +57,12 @@ public class PaymentAuthorizationService {
         if (existing.isPresent() && existing.get().isAuthorizedOrCaptured()) {
             return IdempotentResult.existing(existing.get());
         }
-        PaymentMethod method = paymentMethods.findById(paymentMethodId)
-                .filter(candidate -> candidate.isUsableBy(passengerId))
-                .orElseThrow(() -> new ResourceNotFoundException("Payment method not found"));
+        PaymentMethod method = resolvePaymentMethod(passengerId, paymentMethodId);
+        UUID methodId = method.getId();
         Payment payment = existing.map(previous -> {
-            previous.retry(passengerId, paymentMethodId, money);
+            previous.retry(passengerId, methodId, money);
             return previous;
-        }).orElseGet(() -> Payment.create(bookingId, passengerId, paymentMethodId, money));
+        }).orElseGet(() -> Payment.create(bookingId, passengerId, methodId, money));
 
         GatewayAuthorization result = gateway.authorize(method.getCardToken(), money);
         Instant now = Instant.now();
@@ -74,5 +77,15 @@ public class PaymentAuthorizationService {
         events.publish(new PaymentAuthorized(authorized.getId(), bookingId, passengerId, money.getAmount(),
                 money.getCurrency(), now));
         return IdempotentResult.created(authorized);
+    }
+
+    private PaymentMethod resolvePaymentMethod(UUID passengerId, UUID paymentMethodId) {
+        if (paymentMethodId == null) {
+            return paymentMethods.findLatestActiveByPassengerId(passengerId)
+                    .orElseThrow(() -> new UnprocessableRequestException("The passenger has no active payment method"));
+        }
+        return paymentMethods.findById(paymentMethodId)
+                .filter(candidate -> candidate.isUsableBy(passengerId))
+                .orElseThrow(() -> new ResourceNotFoundException("Payment method not found"));
     }
 }
