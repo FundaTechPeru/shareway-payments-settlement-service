@@ -2,6 +2,7 @@ package com.fundatech.shareway.paymentsettlement.infrastructure.persistence;
 
 import com.fundatech.shareway.paymentsettlement.domain.model.PaymentMethod;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,6 +12,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface JpaPaymentMethodRepository extends JpaRepository<PaymentMethod, UUID> {
 
     List<PaymentMethod> findByPassengerIdAndActiveTrueOrderByCreatedAtAsc(UUID passengerId);
+
+    Optional<PaymentMethod> findFirstByPassengerIdAndActiveTrueOrderByCreatedAtDescIdDesc(UUID passengerId);
 
     boolean existsByPassengerIdAndCardTokenAndActiveTrue(UUID passengerId, String cardToken);
 }

@@ -9,12 +9,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 /**
  * Valida los tokens HS256 emitidos por Driver Management. Este servicio no emite tokens.
+ * Depende de {@link JwtSecretValidator} para que un secreto inválido falle con un mensaje claro antes de crear la clave.
  */
 @Service
+@DependsOn("jwtSecretValidator")
 public class JwtService {
 
     private final SecretKey key;

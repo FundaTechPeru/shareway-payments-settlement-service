@@ -16,5 +16,10 @@ public interface PaymentMethodRepository {
 
     List<PaymentMethod> findActiveByPassengerId(UUID passengerId);
 
+    /**
+     * Devuelve el método de pago activo registrado más recientemente por el pasajero.
+     */
+    Optional<PaymentMethod> findLatestActiveByPassengerId(UUID passengerId);
+
     boolean existsActiveByPassengerIdAndCardToken(UUID passengerId, String cardToken);
 }

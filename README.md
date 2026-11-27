@@ -14,8 +14,10 @@ Fuera de alcance: login y usuarios (Driver Management) y cálculo de tarifas (Bo
 
 ```bash
 docker compose up -d db
-./mvnw spring-boot:run
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+El perfil `dev` aporta un `JWT_SECRET` de desarrollo. Fuera de los perfiles `dev`, `test` y `local` hay que definir un `JWT_SECRET` real o el servicio no arranca. `docker compose` activa `dev` por defecto (`SPRING_PROFILES_ACTIVE`).
 
 Todo con Docker:
 
@@ -40,14 +42,15 @@ Tests (no necesitan Docker, usan el perfil `test` con H2):
 | `SERVER_PORT` | `8085` | Puerto HTTP |
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5437/payment_settlement_db` | URL JDBC |
 | `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | `shareway` / `shareway` | Credenciales de BD |
-| `JWT_SECRET` | valor de desarrollo compartido con Driver Management | Secreto HS256 para validar tokens |
+| `SPRING_PROFILES_ACTIVE` | ninguno (`dev` en `docker compose`) | Perfil activo; `dev`, `test` y `local` relajan la validación de `JWT_SECRET` |
+| `JWT_SECRET` | ninguno (valor de desarrollo solo con el perfil `dev`) | Secreto HS256 para validar tokens, compartido con Driver Management. **Obligatorio en producción**: fuera de `dev`/`test`/`local` el servicio no arranca si está vacío, es el valor de ejemplo o tiene menos de 32 caracteres (`JwtSecretValidator`) |
 | `INTERNAL_API_KEY` | valor de desarrollo | Clave del header `X-Internal-Api-Key` |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Orígenes permitidos |
 | `COMMISSION_RATE` | `0.15` | Comisión de la plataforma sobre el bruto |
 | `PENALTY_RATE` | `0.50` | Porcentaje del monto autorizado cobrado como penalidad |
 | `PENALTY_WINDOW_MINUTES` | `30` | Minutos antes de la salida dentro de los cuales cancelar genera penalidad |
 
-Los valores por defecto de secretos son solo para desarrollo.
+Los valores por defecto de secretos son solo para desarrollo. El valor de ejemplo de `JWT_SECRET` está en `application-dev.properties`; `application.properties` lo deja vacío.
 
 ## Endpoints
 
@@ -58,7 +61,7 @@ Los valores por defecto de secretos son solo para desarrollo.
 | POST | `/api/v1/payment-methods` | PASSENGER | Registra una tarjeta tokenizada (201; vencida 400; token duplicado 409) |
 | GET | `/api/v1/payment-methods` | PASSENGER | Lista mis tarjetas activas |
 | DELETE | `/api/v1/payment-methods/{id}` | PASSENGER | Desactivación lógica (204; ajena 404) |
-| POST | `/api/v1/internal/payments/authorizations` | API key | Autoriza el pago de una reserva (201; repetido 200; rechazado 402; pasarela caída 503) |
+| POST | `/api/v1/internal/payments/authorizations` | API key | Autoriza el pago de una reserva (201; repetido 200; rechazado 402; método no encontrado 404; sin método activo 422; pasarela caída 503) |
 | GET | `/api/v1/payments/me` | PASSENGER | Lista mis pagos |
 | GET | `/api/v1/payments/me/{id}` | PASSENGER | Detalle de un pago propio (ajeno 404) |
 | POST | `/api/v1/internal/events/trip-completed` | API key | Evento TripCompleted: captura los pagos y crea la liquidación (201; repetido 200; 409 sin cambios) |
@@ -74,6 +77,19 @@ Los valores por defecto de secretos son solo para desarrollo.
 `/api/v1/internal/**` no usa JWT. Lo llaman otros microservicios (Booking & Pricing, Trip Execution) con el header `X-Internal-Api-Key`; sin header o con una clave incorrecta responde 401. La clave se compara en tiempo constante.
 
 La autorización es idempotente por `bookingId`: si la reserva ya tiene un pago `AUTHORIZED` o `CAPTURED` se devuelve el mismo pago (200) sin volver a llamar a la pasarela; si estaba `REJECTED` se reintenta sobre el mismo registro.
+
+### Autorización de pago (US04)
+
+Cuerpo de `POST /api/v1/internal/payments/authorizations`:
+
+```json
+{"bookingId": "<uuid>", "passengerId": "<uuid>", "paymentMethodId": "<uuid, opcional>", "amount": 25.50, "currency": "PEN"}
+```
+
+- `paymentMethodId` es **opcional**, porque la reserva de Booking & Pricing no trae método de pago.
+- Si no llega, se usa el método de pago **activo registrado más recientemente** por `passengerId`. Si el pasajero no tiene ninguno activo responde 422 con `message = "The passenger has no active payment method"`.
+- Si llega, debe ser un método activo del mismo pasajero; si no existe, está desactivado o es de otro pasajero responde 404.
+- La respuesta incluye el `paymentMethodId` usado. La comprobación de idempotencia por `bookingId` se hace antes de elegir el método.
 
 ### Recepción de eventos de otros servicios
 
@@ -142,6 +158,7 @@ Todas las respuestas de error tienen el cuerpo `{timestamp, status, error, messa
 | 403 | Rol insuficiente |
 | 404 | Recurso no encontrado o ajeno |
 | 409 | Duplicado o estado inválido |
+| 422 | Solicitud válida que no se puede procesar (pasajero sin método de pago activo) |
 | 503 | Pasarela no disponible |
 
 ## Decisiones de diseño
@@ -157,6 +174,7 @@ Todas las respuestas de error tienen el cuerpo `{timestamp, status, error, messa
 ## Pruebas
 
 - Escenarios Cucumber (Gherkin en inglés) en `src/test/resources/features`, ejecutados con MockMvc sobre H2 y con la BD limpia antes de cada escenario.
+- `JwtSecretValidatorTest` cubre el secreto vacío, el de ejemplo y uno corto fuera de los perfiles relajados, y su aceptación con `dev`, `test` y `local`.
 - `TestTokenFactory` firma tokens de prueba (`sub`, `userId`, `role`) con el secreto del perfil `test`, incluidos tokens expirados y sin `role`.
 - Pruebas unitarias del dominio: redondeo de comisión y neto, `gross = commission + net`, penalidad dentro y fuera de la ventana y transiciones inválidas de `Payment`.
 

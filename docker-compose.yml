@@ -24,6 +24,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/payment_settlement_db
       SPRING_DATASOURCE_USERNAME: shareway
       SPRING_DATASOURCE_PASSWORD: shareway
+      # Local development stack: the dev profile accepts the example JWT secret below. Production does
+      # not run this profile and must provide a strong JWT_SECRET of its own.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       JWT_SECRET: ${JWT_SECRET:-dev-only-shareway-driver-management-secret-change-me}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-only-shareway-internal-api-key}
     ports:

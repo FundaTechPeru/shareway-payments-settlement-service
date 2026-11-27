@@ -112,3 +112,62 @@ Feature: Payment authorization when booking (US04)
     Given I am authenticated as a DRIVER with id 2
     When I send a GET request to "/api/v1/payments/me"
     Then the response status should be 403
+
+  Scenario: Authorization without paymentMethodId uses the passenger's latest active payment method
+    Given passenger 3 has an active payment method with card token "tok_p3_oldest" registered 20 minutes ago saved as "oldestCardId"
+    And passenger 3 has an active payment method with card token "tok_p3_latest" registered 10 minutes ago saved as "latestCardId"
+    And passenger 3 has an inactive payment method with card token "tok_p3_removed" saved as "removedCardId"
+    When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
+      """
+      {"bookingId": "{uuid:110}", "passengerId": "{uuid:3}", "amount": 12.00, "currency": "PEN"}
+      """
+    Then the response status should be 201
+    And the response field "status" should be "AUTHORIZED"
+    And the response field "paymentMethodId" should be "{latestCardId}"
+
+  Scenario: Repeating an authorization without paymentMethodId is idempotent
+    Given passenger 3 has an active payment method with card token "tok_p3_card" saved as "p3CardId"
+    And I send a POST request to "/api/v1/internal/payments/authorizations" with body:
+      """
+      {"bookingId": "{uuid:111}", "passengerId": "{uuid:3}", "amount": 12.00, "currency": "PEN"}
+      """
+    And I save the response field "id" as "paymentId"
+    When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
+      """
+      {"bookingId": "{uuid:111}", "passengerId": "{uuid:3}", "amount": 12.00, "currency": "PEN"}
+      """
+    Then the response status should be 200
+    And the response field "id" should be "{paymentId}"
+    And the response field "paymentMethodId" should be "{p3CardId}"
+
+  Scenario: Authorization without paymentMethodId and no active payment method returns 422
+    Given passenger 4 has an inactive payment method with card token "tok_p4_removed" saved as "removedCardId"
+    When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
+      """
+      {"bookingId": "{uuid:112}", "passengerId": "{uuid:4}", "amount": 12.00, "currency": "PEN"}
+      """
+    Then the response status should be 422
+    And the response field "status" should be "422"
+    And the response field "message" should be "The passenger has no active payment method"
+    And the response field "path" should be "/api/v1/internal/payments/authorizations"
+    And I am authenticated as a PASSENGER with id 4
+    And I send a GET request to "/api/v1/payments/me"
+    And the response should contain 0 items
+
+  Scenario: Authorization with paymentMethodId uses that method even if it is not the latest
+    Given passenger 3 has an active payment method with card token "tok_p3_oldest" registered 20 minutes ago saved as "oldestCardId"
+    And passenger 3 has an active payment method with card token "tok_p3_latest" registered 10 minutes ago saved as "latestCardId"
+    When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
+      """
+      {"bookingId": "{uuid:113}", "passengerId": "{uuid:3}", "paymentMethodId": "{oldestCardId}", "amount": 12.00, "currency": "PEN"}
+      """
+    Then the response status should be 201
+    And the response field "paymentMethodId" should be "{oldestCardId}"
+
+  Scenario: Authorization with an inactive paymentMethodId is not found
+    Given passenger 3 has an inactive payment method with card token "tok_p3_removed" saved as "removedCardId"
+    When I send a POST request to "/api/v1/internal/payments/authorizations" with body:
+      """
+      {"bookingId": "{uuid:114}", "passengerId": "{uuid:3}", "paymentMethodId": "{removedCardId}", "amount": 12.00, "currency": "PEN"}
+      """
+    Then the response status should be 404

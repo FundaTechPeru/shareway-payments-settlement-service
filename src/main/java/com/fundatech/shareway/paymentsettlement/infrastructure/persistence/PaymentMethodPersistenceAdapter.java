@@ -35,6 +35,11 @@ public class PaymentMethodPersistenceAdapter implements PaymentMethodRepository 
     }
 
     @Override
+    public Optional<PaymentMethod> findLatestActiveByPassengerId(UUID passengerId) {
+        return jpa.findFirstByPassengerIdAndActiveTrueOrderByCreatedAtDescIdDesc(passengerId);
+    }
+
+    @Override
     public boolean existsActiveByPassengerIdAndCardToken(UUID passengerId, String cardToken) {
         return jpa.existsByPassengerIdAndCardTokenAndActiveTrue(passengerId, cardToken);
     }
